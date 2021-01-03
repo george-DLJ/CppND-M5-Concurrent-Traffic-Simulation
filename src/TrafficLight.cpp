@@ -95,7 +95,7 @@ void TrafficLight::cycleThroughPhases()
             // 3. Toggle between red and green
                 _currentPhase = _currentPhase == TrafficLightPhase::red ? TrafficLightPhase::green : TrafficLightPhase::red;
             // 4. Send update message to queue
-                //TODO: move current phase when messageQueue is implemented in FP.3/FP.4
+                _lightPhaseMsgs.send(std::move(_currentPhase));
             // 5. reset stop watch for next cycle
             lastUpdate = std::chrono::system_clock::now();
         }
