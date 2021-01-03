@@ -3,7 +3,6 @@
 #include "TrafficLight.h"
 
 /* Implementation of class "MessageQueue" */
-
 /*
 template <typename T>
 T MessageQueue<T>::receive()
