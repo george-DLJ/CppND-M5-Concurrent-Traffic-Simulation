@@ -4,17 +4,27 @@
 
 /* Implementation of class "MessageQueue" */
 
-/*
-template <typename T>         
-T MessageQueue<T>::receive() 
+
+//template <typename T>       //FP.5: first approach: define without generics   
+//T MessageQueue<T>::receive() 
+TrafficLightPhase MessageQueue::receive() 
 {
     // FP.5a : The method receive should use std::unique_lock<std::mutex> and _condition.wait() 
     // to wait for and receive new messages and pull them from the queue using move semantics. 
     // The received object should then be returned by the receive function. 
-}
-*/ 
+    std::unique_lock<std::mutex> uLock(_mutex);
+    _condition.wait(uLock, [this] {return !_queue.empty();});
 
-//template <typename T>             //FP.4/ FP.4 define without generics
+    // remove first element from queue (FIFO);
+    // NOTE: we want last traffic light state; send is being called by intersection.
+    //       see detailes answer: https://knowledge.udacity.com/questions/116321
+    TrafficLightPhase lightPhase= std::move(_queue.back());
+    _queue.pop_back();
+    return lightPhase;
+}
+
+
+//template <typename T>             //FP.4 define without generics
 //void MessageQueue<T>::send(T &&msg)
 void MessageQueue::send(TrafficLightPhase &&lightPhase)
 {
@@ -22,7 +32,7 @@ void MessageQueue::send(TrafficLightPhase &&lightPhase)
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
     
     //perform queue modification under the Lock (until end of scope):
-    std::lock_guard<std::mutex> uLock(_mutex);
+    std::lock_guard<std::mutex> uLock(_mutex); //NOTE: (since, C++17) one should use std::scoped_lock instead of std::lock_guard std::unique_lock<std::mutex>
 
     // add LightPhase/msg to queue:
     _queue.push_back(std::move(lightPhase));
