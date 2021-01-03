@@ -4,7 +4,7 @@
 
 /* Implementation of class "MessageQueue" */
 
-/* 
+/*
 template <typename T>
 T MessageQueue<T>::receive()
 {
@@ -23,7 +23,7 @@ void MessageQueue<T>::send(T &&msg)
 
 /* Implementation of class "TrafficLight" */
 
-/* 
+ 
 TrafficLight::TrafficLight()
 {
     _currentPhase = TrafficLightPhase::red;
@@ -43,7 +43,10 @@ TrafficLightPhase TrafficLight::getCurrentPhase()
 
 void TrafficLight::simulate()
 {
-    // FP.2b : Finally, the private method „cycleThroughPhases“ should be started in a thread when the public method „simulate“ is called. To do this, use the thread queue in the base class. 
+    // FP.2b : Finally, the private method „cycleThroughPhases“ should be started 
+    //         in a thread when the public method „simulate“ is called. To do 
+    //         this, use the thread queue in the base class. 
+    threads.emplace_back(std::thread(&TrafficLight::cycleThroughPhases, this));
 }
 
 // virtual function which is executed in a thread
@@ -53,6 +56,32 @@ void TrafficLight::cycleThroughPhases()
     // and toggles the current phase of the traffic light between red and green and sends an update method 
     // to the message queue using move semantics. The cycle duration should be a random value between 4 and 6 seconds. 
     // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles. 
+    
+    //NOTE: Implementation using same technique used on Vehicle::drive()
+    // 0. Set Phase Duration to a (pseudo)random value between 4-6 secs
+    std::random_device rd;
+    std::mt19937 eng(rd()); //mersenne twister engin pseudo-random nr generator
+    std::uniform_int_distribution<> distr(4, 6); // Traffic light phase duration in seconds; 
+                                                  //NOTE: for simplicity, I want the phases to be just 4, 5 or 6 seconds; 
+                                                  //      nothing in between.
+    long phaseDuration = distr(eng) * 1000; // Traffic light phase duration in milliseconds;
+
+    // 1. Init stop watch
+    std::chrono::time_point<std::chrono::system_clock> lastUpdate;
+    lastUpdate = std::chrono::system_clock::now();
+    while (true){
+        // 2. Compute time difference to stop watch
+        long elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - lastUpdate).count();
+        if (elapsedTime > phaseDuration) {
+            // 3. Toggle between red and green
+                _currentPhase = _currentPhase == TrafficLightPhase::red ? TrafficLightPhase::green : TrafficLightPhase::red;
+            // 4. Send update message to queue
+                //TODO: move current phase when messageQueue is implemented in FP.3/FP.4
+            // 5. reset stop watch for next cycle
+            lastUpdate = std::chrono::system_clock::now();
+        }
+        // sleep at every iteration to reduce CPU usage
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
 }
 
-*/
