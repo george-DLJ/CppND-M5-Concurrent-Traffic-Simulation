@@ -4,10 +4,10 @@
 
 /* Implementation of class "MessageQueue" */
 
-
-//template <typename T>       //FP.5: first approach: define without generics   
-//T MessageQueue<T>::receive() 
-TrafficLightPhase MessageQueue::receive() 
+//FP.5: first approach: define without generics.
+//FP.7 implementing message queue send/receive using generics
+template <typename T>          
+T MessageQueue<T>::receive() //TrafficLightPhase MessageQueue::receive() 
 {
     // FP.5a : The method receive should use std::unique_lock<std::mutex> and _condition.wait() 
     // to wait for and receive new messages and pull them from the queue using move semantics. 
@@ -18,24 +18,27 @@ TrafficLightPhase MessageQueue::receive()
     // remove first element from queue (FIFO);
     // NOTE: we want last traffic light state; send is being called by intersection.
     //       see detailes answer: https://knowledge.udacity.com/questions/116321
-    TrafficLightPhase lightPhase= std::move(_queue.back());
+    // TrafficLightPhase lightPhase= std::move(_queue.back()); //FP.5 non-generic version
+    T msg= std::move(_queue.back()); //FP.7 generic version (renamed from lightPhase to msg)
     _queue.pop_back();
-    return lightPhase;
+    _queue.clear(); //suggested by https://knowledge.udacity.com/questions/267031
+    return msg;
 }
 
-
-//template <typename T>             //FP.4 define without generics
-//void MessageQueue<T>::send(T &&msg)
-void MessageQueue::send(TrafficLightPhase &&lightPhase)
+//FP.4 define without generics
+//FP.7 implementing message queue send/recceive using generics
+template <typename T>            
+void MessageQueue<T>::send(T &&msg) //void MessageQueue::send(TrafficLightPhase &&lightPhase)
 {
     // FP.4a : The method send should use the mechanisms std::lock_guard<std::mutex> 
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
     
     //perform queue modification under the Lock (until end of scope):
     std::lock_guard<std::mutex> uLock(_mutex); //NOTE: (since, C++17) one should use std::scoped_lock instead of std::lock_guard std::unique_lock<std::mutex>
-
+    _queue.clear();  //suggested by https://knowledge.udacity.com/questions/133845
     // add LightPhase/msg to queue:
-    _queue.push_back(std::move(lightPhase));
+    //_queue.push_back(std::move(lightPhase)); //FP.5 non-generic verwion
+    _queue.push_back(std::move(msg)); // FP.7 generics version (lightPhase renamed to msg)
     _condition.notify_one(); //notify client after updating queue;
 }
 
@@ -87,10 +90,10 @@ void TrafficLight::cycleThroughPhases()
     // 0. Set Phase Duration to a (pseudo)random value between 4-6 secs
     std::random_device rd;
     std::mt19937 eng(rd()); //mersenne twister engin pseudo-random nr generator
-    std::uniform_int_distribution<> distr(4, 6); // Traffic light phase duration in seconds; 
+    std::uniform_int_distribution<> distr(5000, 20000); // Traffic light phase duration in seconds; 
                                                   //NOTE: for simplicity, I want the phases to be just 4, 5 or 6 seconds; 
                                                   //      nothing in between.
-    long phaseDuration = distr(eng) * 1000; // Traffic light phase duration in milliseconds;
+    long phaseDuration = (long)distr(eng); //* 1000; // Traffic light phase duration in milliseconds;
 
     // 1. Init stop watch
     std::chrono::time_point<std::chrono::system_clock> lastUpdate;
