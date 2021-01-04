@@ -4,10 +4,28 @@
 
 /* Implementation of class "MessageQueue" */
 
-//FP.5: first approach: define without generics.
-//FP.7 implementing message queue send/receive using generics
+/**
+ * NOTE for mentor: 
+ * The cars are sometimes ignoring the traffic ligths whether:
+ * - stay stopeed on a green light or 
+ * - they enter some intersections when traffic light is red.
+ * I added two _queue.clear one on receive() and one on send() following
+ * Knowledge Base recommentations: 
+ *  - https://knowledge.udacity.com/questions/116321
+ *  - https://knowledge.udacity.com/questions/267031
+ * Since  then the issues described above have notably reduced but 
+ * the stuck cars on green  still happens. Specially visible when increasing 
+ * lights Phases to larger periods of time, e.g 10-20 seconds.
+ * 
+ * QUESTIONS:
+ * - Why is above described problem happening? 
+ * - Should not msg queues precisely avoid that?
+ * - If a car goes through a green light and there is a second car on the queue, 
+ *    how does this second car knows the state of the Traffic light if the 
+ *    traffic light state messsage has been removed from the queue?
+ */ 
 template <typename T>          
-T MessageQueue<T>::receive() //TrafficLightPhase MessageQueue::receive() 
+T MessageQueue<T>::receive() 
 {
     // FP.5a : The method receive should use std::unique_lock<std::mutex> and _condition.wait() 
     // to wait for and receive new messages and pull them from the queue using move semantics. 
@@ -15,31 +33,23 @@ T MessageQueue<T>::receive() //TrafficLightPhase MessageQueue::receive()
     std::unique_lock<std::mutex> uLock(_mutex);
     _condition.wait(uLock, [this] {return !_queue.empty();});
 
-    // remove first element from queue (FIFO);
-    // NOTE: we want last traffic light state; send is being called by intersection.
-    //       see detailes answer: https://knowledge.udacity.com/questions/116321
-    // TrafficLightPhase lightPhase= std::move(_queue.back()); //FP.5 non-generic version
-    T msg= std::move(_queue.back()); //FP.7 generic version (renamed from lightPhase to msg)
+    T msg= std::move(_queue.back()); 
     _queue.pop_back();
-    _queue.clear(); //suggested by https://knowledge.udacity.com/questions/267031
+    _queue.clear(); //see: https://knowledge.udacity.com/questions/267031
     return msg;
 }
 
-//FP.4 define without generics
-//FP.7 implementing message queue send/recceive using generics
 template <typename T>            
-void MessageQueue<T>::send(T &&msg) //void MessageQueue::send(TrafficLightPhase &&lightPhase)
+void MessageQueue<T>::send(T &&msg) 
 {
     // FP.4a : The method send should use the mechanisms std::lock_guard<std::mutex> 
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
     
     //perform queue modification under the Lock (until end of scope):
-    std::lock_guard<std::mutex> uLock(_mutex); //NOTE: (since, C++17) one should use std::scoped_lock instead of std::lock_guard std::unique_lock<std::mutex>
-    _queue.clear();  //suggested by https://knowledge.udacity.com/questions/133845
-    // add LightPhase/msg to queue:
-    //_queue.push_back(std::move(lightPhase)); //FP.5 non-generic verwion
-    _queue.push_back(std::move(msg)); // FP.7 generics version (lightPhase renamed to msg)
-    _condition.notify_one(); //notify client after updating queue;
+    std::lock_guard<std::mutex> uLock(_mutex); 
+    _queue.clear();  //see: https://knowledge.udacity.com/questions/133845
+    _queue.push_back(std::move(msg)); 
+    _condition.notify_one(); 
 }
 
 
@@ -78,7 +88,13 @@ void TrafficLight::simulate()
     threads.emplace_back(std::thread(&TrafficLight::cycleThroughPhases, this));
 }
 
-// virtual function which is executed in a thread
+/**
+ * NOTE for mentor: 
+ *  Please check if this method is correct, as the strange
+ *  behavior of the cars could be related to a conceptual error here.            
+ * 
+ * NOTE:  virtual function which is executed in a thread
+ */
 void TrafficLight::cycleThroughPhases()
 {
     // FP.2a : Implement the function with an infinite loop that measures the time between two loop cycles 
@@ -90,10 +106,10 @@ void TrafficLight::cycleThroughPhases()
     // 0. Set Phase Duration to a (pseudo)random value between 4-6 secs
     std::random_device rd;
     std::mt19937 eng(rd()); //mersenne twister engin pseudo-random nr generator
-    std::uniform_int_distribution<> distr(5000, 20000); // Traffic light phase duration in seconds; 
-                                                  //NOTE: for simplicity, I want the phases to be just 4, 5 or 6 seconds; 
-                                                  //      nothing in between.
-    long phaseDuration = (long)distr(eng); //* 1000; // Traffic light phase duration in milliseconds;
+    std::uniform_int_distribution<> distr(40, 60); // Traffic light phase duration in tenth's of second; 
+                                                  //NOTE: for simplicity, I want the phases to be just 4.0, 4.1, ... 5.9 or 6.0 seconds; 
+                                                  //      in total 20 possible values.
+    long phaseDuration = (long)distr(eng) * 100; // Convert Traffic light phase duration to milliseconds;
 
     // 1. Init stop watch
     std::chrono::time_point<std::chrono::system_clock> lastUpdate;

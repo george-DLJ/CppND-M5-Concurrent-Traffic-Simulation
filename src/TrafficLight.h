@@ -20,8 +20,6 @@ enum TrafficLightPhase
 // Also, the class should define an std::dequeue called _queue, which stores objects of type TrafficLightPhase. 
 // Also, there should be an std::condition_variable as well as an std::mutex as private members. 
 
-// FP3: not used as a template!     
-// FP7 using a template (all types renamed to T, 'lightPhase' variable to 'msg')
 template <class T> 
 class MessageQueue
 {
