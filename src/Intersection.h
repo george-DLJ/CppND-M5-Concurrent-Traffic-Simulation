@@ -6,7 +6,7 @@
 #include <mutex>
 #include <memory>
 #include "TrafficObject.h"
-#include "TrafficLight.h" //FP.6: include the class; no need of forward declaration is required in this case.
+#include "TrafficLight.h" 
 
 // forward declarations to avoid include cycle
 class Street;
@@ -24,7 +24,7 @@ public:
     void permitEntryToFirstInQueue();
 
 private:
-    std::vector<std::shared_ptr<Vehicle>> _vehicles;          // list of all vehicles waiting to enter this intersection
+    std::vector<std::shared_ptr<Vehicle>> _vehicles; // list of all vehicles waiting to enter this intersection
     std::vector<std::promise<void>> _promises; // list of associated promises
     std::mutex _mutex;
 };
