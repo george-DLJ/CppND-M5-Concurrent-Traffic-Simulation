@@ -15,7 +15,7 @@
  *  - https://knowledge.udacity.com/questions/267031
  * Since  then the issues described above have notably reduced but 
  * the stuck cars on green  still happens. Specially visible when increasing 
- * lights Phases to larger periods of time, e.g 10-20 seconds.
+ * lights Phases to larger periods of time, e.g 5-20 seconds.
  * 
  * QUESTIONS:
  * - Why is above described problem happening? 
