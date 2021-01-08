@@ -23,6 +23,10 @@
  * - If a car goes through a green light and there is a second car on the queue, 
  *    how does this second car knows the state of the Traffic light if the 
  *    traffic light state messsage has been removed from the queue?
+ * 
+ * CODE REVIEW: 
+ *  - _queue.pop_back(); has been removed, because we are clearing the queue afterwards and 
+ *             makes no sense pop_back if we are going to clear anyway.
  */ 
 template <typename T>          
 T MessageQueue<T>::receive() 
@@ -34,11 +38,13 @@ T MessageQueue<T>::receive()
     _condition.wait(uLock, [this] {return !_queue.empty();});
 
     T msg= std::move(_queue.back()); 
-    _queue.pop_back();
-    _queue.clear(); //see: https://knowledge.udacity.com/questions/267031
+    _queue.clear(); //see: https://knowledge.udacity.com/questions/267031 ; 
     return msg;
 }
 
+/**
+ * CODE REVIEW: _queue must not be cleared before pushing an message into it.
+ */
 template <typename T>            
 void MessageQueue<T>::send(T &&msg) 
 {
@@ -47,7 +53,6 @@ void MessageQueue<T>::send(T &&msg)
     
     //perform queue modification under the Lock (until end of scope):
     std::lock_guard<std::mutex> uLock(_mutex); 
-    _queue.clear();  //see: https://knowledge.udacity.com/questions/133845
     _queue.push_back(std::move(msg)); 
     _condition.notify_one(); 
 }
@@ -106,10 +111,8 @@ void TrafficLight::cycleThroughPhases()
     // 0. Set Phase Duration to a (pseudo)random value between 4-6 secs
     std::random_device rd;
     std::mt19937 eng(rd()); //mersenne twister engin pseudo-random nr generator
-    std::uniform_int_distribution<> distr(40, 60); // Traffic light phase duration in tenth's of second; 
-                                                  //NOTE: for simplicity, I want the phases to be just 4.0, 4.1, ... 5.9 or 6.0 seconds; 
-                                                  //      in total 20 possible values.
-    long phaseDuration = (long)distr(eng) * 100; // Convert Traffic light phase duration to milliseconds;
+    std::uniform_int_distribution<> distr(4000, 6000); // Traffic light phase duration in milliseconds;
+    long phaseDuration = (long)distr(eng); // Convert Traffic light phase duration to milliseconds;
 
     // 1. Init stop watch
     std::chrono::time_point<std::chrono::system_clock> lastUpdate;
